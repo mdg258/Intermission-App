@@ -18,8 +18,8 @@ class VADProcessor {
         // Initialize WebRTC VAD
         vadHandle = webrtc_vad_create()
         if let handle = vadHandle {
-            webrtc_vad_init(handle)
-            webrtc_vad_set_mode(handle, Int32(mode))
+            _ = webrtc_vad_init(handle)
+            _ = webrtc_vad_set_mode(handle, Int32(mode))
         }
     }
 
@@ -33,7 +33,7 @@ class VADProcessor {
         guard newMode >= 0 && newMode <= 3 else { return }
         mode = newMode
         if let handle = vadHandle {
-            webrtc_vad_set_mode(handle, Int32(mode))
+            _ = webrtc_vad_set_mode(handle, Int32(mode))
         }
     }
 

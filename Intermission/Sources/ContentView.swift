@@ -137,6 +137,7 @@ struct ContentView: View {
     }
 }
 
-#Preview {
-    ContentView()
-}
+// Preview removed for command-line build compatibility
+// #Preview {
+//     ContentView()
+// }

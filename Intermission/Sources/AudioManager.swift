@@ -1,6 +1,7 @@
 import Foundation
 import AVFoundation
 import Combine
+import AppKit
 
 enum AppState {
     case idle           // Listening, no speech
