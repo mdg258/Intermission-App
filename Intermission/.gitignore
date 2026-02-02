@@ -1,0 +1,48 @@
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+*.swiftpm
+
+# macOS
+.DS_Store
+*.app
+*.dSYM.zip
+*.dSYM
+
+# Build artifacts
+DerivedData/
+build/
+*.hmap
+*.ipa
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/Build/
+
+# Temporary files
+*.moved-aside
+*.orig
+*.rej
+*~.nib
+
+# Archives
+*.xcarchive
+
+# App packaging
+*.ipa
+*.pkg
+*.dmg
+
+# Debugging
+*.log

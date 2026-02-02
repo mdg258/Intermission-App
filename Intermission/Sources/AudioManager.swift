@@ -1,0 +1,219 @@
+import Foundation
+import AVFoundation
+import Combine
+
+enum AppState {
+    case idle           // Listening, no speech
+    case speechDetected // Speech detected, waiting for threshold
+    case paused         // Netflix is paused
+    case cooldown       // Cooldown after unpause
+}
+
+class AudioManager: NSObject, ObservableObject {
+    static let shared = AudioManager()
+
+    @Published var isEnabled = false
+    @Published var state: AppState = .idle
+    @Published var hasPermissions = false
+
+    private var audioEngine: AVAudioEngine?
+    private var inputNode: AVAudioInputNode?
+    private var vadProcessor: VADProcessor?
+    private var keyboardSimulator = KeyboardSimulator()
+
+    // State machine timing
+    private var speechStartTime: Date?
+    private var silenceStartTime: Date?
+    private let speechThreshold: TimeInterval = 0.25      // 250ms of speech to pause
+    private let silenceThreshold: TimeInterval = 1.2      // 1200ms of silence to resume
+    private let cooldownDuration: TimeInterval = 1.5      // 1500ms cooldown
+    private var cooldownTimer: Timer?
+
+    // State tracking
+    private var isCurrentlyPaused = false
+
+    override private init() {
+        super.init()
+        checkPermissions()
+    }
+
+    func checkPermissions() {
+        let micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
+        hasPermissions = micStatus == .authorized
+
+        // Check accessibility permissions for keyboard simulation
+        let trusted = AXIsProcessTrusted()
+        hasPermissions = hasPermissions && trusted
+    }
+
+    func requestPermissions() {
+        // Request microphone permission
+        AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+            DispatchQueue.main.async {
+                self?.checkPermissions()
+            }
+        }
+
+        // For accessibility, open System Preferences
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
+        NSWorkspace.shared.open(url)
+    }
+
+    func toggle() {
+        if isEnabled {
+            stop()
+        } else {
+            start()
+        }
+    }
+
+    func setSensitivity(_ mode: Int) {
+        vadProcessor?.setMode(mode)
+    }
+
+    private func start() {
+        guard hasPermissions else {
+            requestPermissions()
+            return
+        }
+
+        audioEngine = AVAudioEngine()
+        guard let audioEngine = audioEngine else { return }
+
+        inputNode = audioEngine.inputNode
+        guard let inputNode = inputNode else { return }
+
+        // Initialize VAD processor
+        vadProcessor = VADProcessor(sampleRate: 16000)
+
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        let targetFormat = AVAudioFormat(commonFormat: .pcmFormatInt16,
+                                        sampleRate: 16000,
+                                        channels: 1,
+                                        interleaved: false)
+
+        guard let targetFormat = targetFormat else { return }
+
+        // Install tap
+        inputNode.installTap(onBus: 0, bufferSize: 512, format: recordingFormat) { [weak self] buffer, _ in
+            self?.processAudioBuffer(buffer, targetFormat: targetFormat)
+        }
+
+        do {
+            try audioEngine.start()
+            DispatchQueue.main.async {
+                self.isEnabled = true
+                self.state = .idle
+            }
+        } catch {
+            print("Failed to start audio engine: \(error)")
+        }
+    }
+
+    private func stop() {
+        audioEngine?.stop()
+        inputNode?.removeTap(onBus: 0)
+        audioEngine = nil
+        inputNode = nil
+
+        DispatchQueue.main.async {
+            self.isEnabled = false
+            self.state = .idle
+        }
+
+        // If we're currently paused, unpause
+        if isCurrentlyPaused {
+            keyboardSimulator.pressSpacebar()
+            isCurrentlyPaused = false
+        }
+
+        cooldownTimer?.invalidate()
+        cooldownTimer = nil
+    }
+
+    private func processAudioBuffer(_ buffer: AVAudioPCMBuffer, targetFormat: AVAudioFormat) {
+        // Convert to 16kHz mono if needed
+        guard let converter = AVAudioConverter(from: buffer.format, to: targetFormat) else { return }
+
+        let capacity = AVAudioFrameCount(Double(buffer.frameLength) * targetFormat.sampleRate / buffer.format.sampleRate)
+        guard let convertedBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: capacity) else { return }
+
+        var error: NSError?
+        converter.convert(to: convertedBuffer, error: &error) { _, outStatus in
+            outStatus.pointee = .haveData
+            return buffer
+        }
+
+        guard error == nil, let channelData = convertedBuffer.int16ChannelData else { return }
+
+        let frameLength = Int(convertedBuffer.frameLength)
+        let samples = Array(UnsafeBufferPointer(start: channelData[0], count: frameLength))
+
+        // Process with VAD
+        guard let isSpeech = vadProcessor?.processSamples(samples) else { return }
+
+        DispatchQueue.main.async {
+            self.handleVADResult(isSpeech: isSpeech)
+        }
+    }
+
+    private func handleVADResult(isSpeech: Bool) {
+        let now = Date()
+
+        // Don't process during cooldown
+        if state == .cooldown {
+            return
+        }
+
+        if isSpeech {
+            // Speech detected
+            silenceStartTime = nil
+
+            if speechStartTime == nil {
+                speechStartTime = now
+                state = .speechDetected
+            } else if let start = speechStartTime,
+                      now.timeIntervalSince(start) >= speechThreshold,
+                      !isCurrentlyPaused {
+                // Enough speech detected, pause media
+                pauseMedia()
+            }
+        } else {
+            // Silence detected
+            speechStartTime = nil
+
+            if isCurrentlyPaused {
+                if silenceStartTime == nil {
+                    silenceStartTime = now
+                } else if let start = silenceStartTime,
+                          now.timeIntervalSince(start) >= silenceThreshold {
+                    // Enough silence, resume media
+                    resumeMedia()
+                }
+            } else {
+                state = .idle
+            }
+        }
+    }
+
+    private func pauseMedia() {
+        keyboardSimulator.pressSpacebar()
+        isCurrentlyPaused = true
+        state = .paused
+    }
+
+    private func resumeMedia() {
+        keyboardSimulator.pressSpacebar()
+        isCurrentlyPaused = false
+        silenceStartTime = nil
+
+        // Enter cooldown period
+        state = .cooldown
+        cooldownTimer?.invalidate()
+        cooldownTimer = Timer.scheduledTimer(withTimeInterval: cooldownDuration, repeats: false) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.state = .idle
+            }
+        }
+    }
+}
