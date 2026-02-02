@@ -8,9 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <stdio.h>
 
 #define FRAME_SIZE_MS 30
-#define MIN_ENERGY_THRESHOLD 100.0
+#define MIN_ENERGY_THRESHOLD 500.0  // Tuned for typical speech detection
 
 struct WebRtcVadInst {
     int mode;
@@ -19,6 +20,8 @@ struct WebRtcVadInst {
     double* history;
     int history_size;
     int history_index;
+    int speech_frames;       // Consecutive frames with speech
+    int silence_frames;      // Consecutive frames with silence
 };
 
 VadInst* webrtc_vad_create(void) {
@@ -46,6 +49,8 @@ int webrtc_vad_init(VadInst* handle) {
     handle->sample_rate = 16000;
     handle->energy_threshold = MIN_ENERGY_THRESHOLD;
     handle->history_index = 0;
+    handle->speech_frames = 0;
+    handle->silence_frames = 0;
 
     return 0;
 }
@@ -123,20 +128,47 @@ int webrtc_vad_process(VadInst* handle,
     }
     avg_energy /= handle->history_size;
 
-    // Speech detection logic
-    // Speech typically has:
-    // - Higher energy than background noise
-    // - Moderate zero crossing rate (not too high like white noise)
-    int is_speech = 0;
+    // Determine if current frame has speech characteristics
+    int frame_has_speech = 0;
 
-    if (energy > handle->energy_threshold) {
-        // Check zero crossing rate - speech is usually between 0.05 and 0.3
-        if (zcr > 0.02 && zcr < 0.5) {
-            // Also check if current energy is significantly higher than recent average
-            if (energy > avg_energy * 0.7 || energy > handle->energy_threshold * 1.2) {
-                is_speech = 1;
-            }
+    // Speech must have:
+    // 1. Energy above threshold
+    // 2. Energy significantly higher than recent average (1.5x minimum)
+    // 3. Zero crossing rate in speech range
+    if (energy > handle->energy_threshold && energy > avg_energy * 1.5) {
+        // Check zero crossing rate - speech is usually between 0.03 and 0.35
+        if (zcr > 0.03 && zcr < 0.35) {
+            frame_has_speech = 1;
         }
+    }
+
+    // Use hysteresis: require multiple consecutive frames to change state
+    // This prevents rapid switching between speech/silence
+    if (frame_has_speech) {
+        handle->speech_frames++;
+        handle->silence_frames = 0;
+    } else {
+        handle->silence_frames++;
+        handle->speech_frames = 0;
+    }
+
+    // Require 3+ consecutive speech frames to report speech
+    // Require 5+ consecutive silence frames to report silence
+    int is_speech = 0;
+    if (handle->speech_frames >= 3) {
+        is_speech = 1;
+    } else if (handle->silence_frames < 5 && handle->speech_frames == 0) {
+        // Still in speech if we haven't had enough silence frames
+        // This prevents brief pauses from being detected as silence
+        is_speech = (handle->silence_frames == 0) ? 0 : 0;
+    }
+
+    // Debug output (comment out for production)
+    static int log_counter = 0;
+    if (++log_counter % 50 == 0) {  // Log every 50 frames (~1.5 seconds at 30ms frames)
+        printf("VAD: energy=%.0f (threshold=%.0f, avg=%.0f), zcr=%.3f, speech_frames=%d, silence_frames=%d, result=%d\n",
+               energy, handle->energy_threshold, avg_energy, zcr,
+               handle->speech_frames, handle->silence_frames, is_speech);
     }
 
     return is_speech;

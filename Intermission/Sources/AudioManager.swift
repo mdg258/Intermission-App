@@ -73,41 +73,62 @@ class AudioManager: NSObject, ObservableObject {
     }
 
     private func start() {
+        print("🚀 AudioManager: Starting...")
+        print("📋 Permissions check - hasPermissions: \(hasPermissions)")
+
         guard hasPermissions else {
+            print("❌ Permissions not granted, requesting...")
             requestPermissions()
             return
         }
 
+        print("✅ Permissions OK, initializing audio engine...")
         audioEngine = AVAudioEngine()
-        guard let audioEngine = audioEngine else { return }
+        guard let audioEngine = audioEngine else {
+            print("❌ Failed to create audio engine")
+            return
+        }
 
         inputNode = audioEngine.inputNode
-        guard let inputNode = inputNode else { return }
+        guard let inputNode = inputNode else {
+            print("❌ Failed to get input node")
+            return
+        }
 
+        print("🎤 Input node obtained, initializing VAD...")
         // Initialize VAD processor
         vadProcessor = VADProcessor(sampleRate: 16000)
 
         let recordingFormat = inputNode.outputFormat(forBus: 0)
+        print("📊 Recording format: \(recordingFormat)")
+
         let targetFormat = AVAudioFormat(commonFormat: .pcmFormatInt16,
                                         sampleRate: 16000,
                                         channels: 1,
                                         interleaved: false)
 
-        guard let targetFormat = targetFormat else { return }
+        guard let targetFormat = targetFormat else {
+            print("❌ Failed to create target format")
+            return
+        }
 
+        print("🎧 Installing audio tap...")
         // Install tap
         inputNode.installTap(onBus: 0, bufferSize: 512, format: recordingFormat) { [weak self] buffer, _ in
             self?.processAudioBuffer(buffer, targetFormat: targetFormat)
         }
 
         do {
+            print("▶️ Starting audio engine...")
             try audioEngine.start()
+            print("✅ Audio engine started successfully!")
             DispatchQueue.main.async {
                 self.isEnabled = true
                 self.state = .idle
+                print("✅ App is now ACTIVE and listening")
             }
         } catch {
-            print("Failed to start audio engine: \(error)")
+            print("❌ Failed to start audio engine: \(error)")
         }
     }
 
@@ -132,7 +153,14 @@ class AudioManager: NSObject, ObservableObject {
         cooldownTimer = nil
     }
 
+    private var bufferCount = 0
+
     private func processAudioBuffer(_ buffer: AVAudioPCMBuffer, targetFormat: AVAudioFormat) {
+        bufferCount += 1
+        if bufferCount == 1 {
+            print("🎵 First audio buffer received! Audio capture is working.")
+        }
+
         // Convert to 16kHz mono if needed
         guard let converter = AVAudioConverter(from: buffer.format, to: targetFormat) else { return }
 
@@ -161,6 +189,11 @@ class AudioManager: NSObject, ObservableObject {
     private func handleVADResult(isSpeech: Bool) {
         let now = Date()
 
+        // Debug logging
+        if isSpeech {
+            print("🎙️ VAD: SPEECH | State: \(state) | Paused: \(isCurrentlyPaused)")
+        }
+
         // Don't process during cooldown
         if state == .cooldown {
             return
@@ -173,10 +206,12 @@ class AudioManager: NSObject, ObservableObject {
             if speechStartTime == nil {
                 speechStartTime = now
                 state = .speechDetected
+                print("⏱️ VAD: Started speech timer")
             } else if let start = speechStartTime,
                       now.timeIntervalSince(start) >= speechThreshold,
                       !isCurrentlyPaused {
                 // Enough speech detected, pause media
+                print("⏸️ VAD: Speech threshold met (\(String(format: "%.2f", now.timeIntervalSince(start)))s), PAUSING media")
                 pauseMedia()
             }
         } else {
@@ -186,13 +221,22 @@ class AudioManager: NSObject, ObservableObject {
             if isCurrentlyPaused {
                 if silenceStartTime == nil {
                     silenceStartTime = now
-                } else if let start = silenceStartTime,
-                          now.timeIntervalSince(start) >= silenceThreshold {
-                    // Enough silence, resume media
-                    resumeMedia()
+                    print("🔇 VAD: Started silence timer (media is paused)")
+                } else if let start = silenceStartTime {
+                    let elapsed = now.timeIntervalSince(start)
+                    if elapsed >= silenceThreshold {
+                        // Enough silence, resume media
+                        print("▶️ VAD: Silence threshold met (\(String(format: "%.2f", elapsed))s), RESUMING media")
+                        resumeMedia()
+                    } else {
+                        // Still waiting for silence threshold
+                        print("⏳ VAD: Silence ongoing... \(String(format: "%.2f", elapsed))s / \(silenceThreshold)s")
+                    }
                 }
             } else {
-                state = .idle
+                if state != .idle {
+                    state = .idle
+                }
             }
         }
     }
