@@ -2,23 +2,33 @@
   <img src="intermission.png" alt="Intermission Logo" width="400">
 </p>
 
-# Intermission
+<h1 align="center">Intermission</h1>
 
-A modern macOS menu bar app that automatically pauses your media (Netflix, YouTube, etc.) when you start talking and resumes when you're done.
+<p align="center">
+  <strong>Auto-pause your media when you talk. Auto-resume when you're done.</strong>
+</p>
 
-Perfect for watching shows with friends or family - no more manually pausing when someone starts a conversation!
+<p align="center">
+  A modern macOS menu bar app that automatically pauses Netflix, YouTube, and more when you start talking.
+  <br>Perfect for watching shows with friends or family - no more fumbling for the pause button!
+</p>
 
-## Features
+<p align="center">
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-how-to-use">How to Use</a> •
+  <a href="#-troubleshooting">Troubleshooting</a> •
+  <a href="#-contributing">Contributing</a>
+</p>
 
-- **Real-time Voice Activity Detection** using WebRTC VAD
-- **Smart State Machine**
-  - Pauses after ~250ms of detected speech
-  - Resumes after ~1.2s of silence
-  - Cooldown period to prevent spam toggles
-- **Adjustable Sensitivity** (Quality, Low Bitrate, Aggressive, Very Aggressive)
-- **Clean Menu Bar UI** - Unobtrusive and always accessible
-- **Low Latency** - Fast, offline detection with minimal CPU usage
-- **Privacy First** - All processing happens locally, no data leaves your Mac
+## ✨ Features
+
+- 🎙️ **Real-time Voice Detection** - Uses WebRTC VAD, not just volume threshold
+- 🧠 **Smart State Machine** - Pauses after ~250ms of speech, resumes after ~1.2s of silence
+- 🎚️ **Adjustable Sensitivity** - Four levels from Quality to Very Aggressive
+- 🖥️ **Menu Bar App** - Clean, unobtrusive interface that stays out of your way
+- ⚡ **Fast & Lightweight** - Low latency, minimal CPU usage (~1-2%)
+- 🔒 **Privacy First** - All processing happens locally, no data leaves your Mac
+- 🎬 **Universal Compatibility** - Works with Netflix, YouTube, VLC, and more
 
 ## Screenshots
 
@@ -28,98 +38,170 @@ The app lives in your menu bar with a simple pause icon. Click it to see the con
 - Real-time status indicator
 - Permission management
 
-## Requirements
+## 🚀 Quick Start
+
+### What You Need
 
 - macOS 13.0 (Ventura) or later
-- Microphone permission
-- Accessibility permission (for keyboard simulation)
-- Xcode 15.0+ (for building)
+- Xcode 15.0+ (free from the Mac App Store)
 
-## Building the App
+### Installation
 
-### Prerequisites
+#### Option 1: Command Line (Fastest)
 
-1. Install Xcode from the Mac App Store
-2. Install Xcode Command Line Tools:
+```bash
+# 1. Clone the repository
+git clone https://github.com/YOUR_USERNAME/intermission.git
+cd intermission
+
+# 2. Build the app
+swift build -c release
+
+# 3. Run the app
+.build/release/Intermission
+```
+
+The app will appear in your menu bar (top-right corner) with a pause icon.
+
+#### Option 2: Xcode (Recommended for Development)
+
+1. **Clone the repository**
    ```bash
-   xcode-select --install
+   git clone https://github.com/YOUR_USERNAME/intermission.git
+   cd intermission
    ```
 
-### Build Steps
-
-1. **Clone or navigate to the project directory**:
-   ```bash
-   cd /Users/creativnativ/Desktop/Netflix-Idea/Intermission
-   ```
-
-2. **Build using Swift Package Manager**:
-   ```bash
-   swift build -c release
-   ```
-
-3. **Or open in Xcode**:
+2. **Open in Xcode**
    ```bash
    open Package.swift
    ```
-   Then press `Cmd+B` to build or `Cmd+R` to run.
+   Or double-click `Package.swift` in Finder
 
-### Creating an Xcode Project (Alternative)
+3. **Build and Run**
+   - Press `⌘ + R` to build and run
+   - Or press `⌘ + B` to just build
 
-If you prefer working with an Xcode project:
+4. **Look for the icon**
+   - The app appears in your menu bar (not the Dock)
+   - Click the pause icon to get started
 
-1. Create a new macOS App in Xcode (File → New → Project)
-2. Name it "Intermission"
-3. Choose SwiftUI for the interface
-4. Copy all files from `Sources/` to your project
-5. Copy all files from `WebRTCVAD/` to your project
-6. Add a bridging header if needed for the C code
-7. Configure Info.plist with required permissions:
-   - `NSMicrophoneUsageDescription`: "Intermission needs microphone access to detect when you're speaking"
-   - Add Hardened Runtime capability
-   - Enable App Sandbox (with microphone access)
+### First-Time Setup
 
-## Permissions Setup
+After launching, you'll need to grant two permissions:
 
-The app requires two permissions to function:
+#### 1. Microphone Access (Auto-Prompt)
+- macOS will ask: "Intermission would like to access the microphone"
+- Click **OK**
+- This lets the app detect when you're speaking
 
-### 1. Microphone Permission
-- The app will automatically request this on first launch
-- Grant access when prompted
+#### 2. Accessibility Access (Manual Setup)
+The app needs this to simulate spacebar presses:
 
-### 2. Accessibility Permission
-This allows the app to simulate the spacebar key press:
+1. Click the Intermission menu bar icon
+2. Click **Grant** in the permissions warning
+3. System Settings will open automatically
+4. Click the **🔒 lock icon** (bottom-left) and enter your password
+5. Click the **+** button
+6. Find and select **Intermission** (or **Intermission.app**)
+7. Make sure the checkbox ✅ is enabled
+8. Close System Settings
 
-1. Open **System Settings** → **Privacy & Security** → **Accessibility**
-2. Click the lock icon to make changes
-3. Click the **+** button
-4. Navigate to and add the Intermission app
-5. Ensure the checkbox next to Intermission is enabled
+That's it! Click "Start Listening" and you're ready to go.
 
-**Note**: The app will guide you through these steps and can open System Settings directly.
+## 📖 How to Use
 
-## Usage
+### Basic Usage
 
-1. **Launch the app** - It appears in your menu bar as a pause icon
+1. **Find the app** in your menu bar (pause icon at top-right)
 2. **Click the icon** to open the control panel
-3. **Click "Start Listening"** to activate voice detection
-4. **Adjust sensitivity** if needed:
-   - **Quality (0)**: Less sensitive, best for quiet environments
-   - **Low Bitrate (1)**: Balanced sensitivity
-   - **Aggressive (2)**: More sensitive, good for normal environments *(default)*
-   - **Very Aggressive (3)**: Most sensitive, for noisy environments
-5. **Start watching** Netflix, YouTube, or any media player
-6. **Talk naturally** - The app will pause after ~250ms of speech
-7. **Stay silent** - The app resumes after ~1.2s of silence
+3. **Click "Start Listening"** - Button turns red when active
+4. **Open Netflix** (or YouTube, Disney+, etc.)
+5. **Start talking** - Video pauses automatically after ~250ms
+6. **Stop talking** - Video resumes after ~1.2 seconds of silence
 
-### Tips
+That's it! The app runs in the background and handles everything automatically.
 
-- The app works with any video player that responds to the spacebar key
-- Adjust sensitivity based on your environment (noisy room vs quiet room)
-- The status indicator shows what state the app is in:
-  - "Listening for speech..." - Active and monitoring
-  - "Speech detected" - Voice detected, waiting to pause
-  - "Media paused" - Currently paused
-  - "Cooldown period" - Temporary pause before resuming monitoring
+### Adjusting Sensitivity
+
+If the app is too sensitive or not sensitive enough, use the slider:
+
+| Setting | When to Use |
+|---------|-------------|
+| **Quality** | Quiet room, minimal background noise |
+| **Low Bitrate** | Normal home environment |
+| **Aggressive** ⭐ | Default - works for most situations |
+| **Very Aggressive** | Noisy room, soft-spoken, or far from mic |
+
+### Status Indicators
+
+The app shows what it's doing:
+
+- 🟢 **"Listening for speech..."** - Active, waiting for you to talk
+- 🟡 **"Speech detected"** - Heard you, about to pause
+- 🔴 **"Media paused"** - Video is paused
+- ⏸️ **"Cooldown period"** - Temporary pause to prevent spam
+
+### What Works
+
+✅ **Tested and works with:**
+- Netflix (web browser)
+- YouTube (web browser)
+- Disney+, Hulu, Prime Video
+- VLC Media Player
+- QuickTime Player
+- Apple TV+
+- Plex
+
+Basically any app that pauses/plays with the spacebar!
+
+## 🔧 Troubleshooting
+
+### App doesn't pause my video
+
+**Check permissions:**
+1. Go to System Settings → Privacy & Security → Accessibility
+2. Make sure Intermission is in the list and ✅ checked
+3. If not, click **+** and add it
+
+**Check focus:**
+- Click on the video player window before starting
+- The media player needs to be the active window
+
+### Too many false pauses
+
+**Lower the sensitivity:**
+1. Click the menu bar icon
+2. Drag the sensitivity slider to "Quality" or "Low Bitrate"
+3. Close windows/apps making background noise
+
+### App doesn't detect my voice
+
+**Increase sensitivity:**
+1. Click the menu bar icon
+2. Drag sensitivity to "Very Aggressive"
+3. Check your mic is working (System Settings → Sound → Input)
+4. Speak closer to your Mac's microphone
+
+### App not in menu bar
+
+**If you don't see the pause icon:**
+- The app might not have started - check Activity Monitor
+- Try rebuilding with Xcode instead of command line
+- Code signing may be required - run from Xcode with ⌘+R
+
+### "Permission needed" warning won't go away
+
+**Grant both permissions:**
+1. **Microphone**: System Settings → Privacy & Security → Microphone
+2. **Accessibility**: System Settings → Privacy & Security → Accessibility
+3. Restart the app after granting permissions
+
+### High CPU usage
+
+The app should use ~1-2% CPU. If higher:
+- Restart the app
+- Check for other audio apps interfering
+- File an issue on GitHub if it persists
 
 ## How It Works
 
@@ -227,31 +309,7 @@ let targetFormat = AVAudioFormat(commonFormat: .pcmFormatInt16,
                                 interleaved: false)
 ```
 
-## Troubleshooting
-
-### App doesn't pause media
-- Ensure Accessibility permission is granted
-- Try clicking in the media player window to ensure it's focused
-- Check that the media player responds to spacebar (most do)
-
-### Too sensitive / Not sensitive enough
-- Adjust the sensitivity slider in the app
-- Try different modes:
-  - Too many false positives? → Lower sensitivity
-  - Not detecting your voice? → Higher sensitivity
-
-### High CPU usage
-- The app is designed to be lightweight (~1-2% CPU)
-- If experiencing high CPU, try:
-  - Lowering the sample rate in AudioManager.swift
-  - Reducing the buffer size (currently 512 frames)
-
-### Permissions not working
-- For microphone: Go to System Settings → Privacy & Security → Microphone
-- For accessibility: Go to System Settings → Privacy & Security → Accessibility
-- You may need to remove and re-add the app
-
-## Future Enhancements
+## 🎯 Future Enhancements
 
 Potential improvements:
 - [ ] App icon and custom design
@@ -263,19 +321,43 @@ Potential improvements:
 - [ ] Multi-language speech detection
 - [ ] Training mode to calibrate for your voice
 
-## Contributing
+## 🤝 Contributing
 
-This is a personal project, but contributions are welcome! Some areas for improvement:
-- Better VAD implementation (integrate full WebRTC VAD or Silero)
-- UI/UX enhancements
-- Additional keyboard shortcut options
-- Bug fixes and optimizations
+Contributions are welcome! Here's how you can help:
 
-## License
+### Report Issues
+Found a bug? Have a feature request?
+1. Check [existing issues](https://github.com/YOUR_USERNAME/intermission/issues)
+2. Create a new issue with details about:
+   - What happened vs. what you expected
+   - Steps to reproduce
+   - Your macOS version
+   - Screenshots if relevant
+
+### Submit Pull Requests
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Test thoroughly
+5. Commit with clear messages (`git commit -m 'Add amazing feature'`)
+6. Push to your fork (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+### Ideas for Contributions
+- 🎨 Better VAD implementation (full WebRTC VAD or Silero)
+- 🎨 UI/UX enhancements and app icon design
+- ⌨️ Global keyboard shortcuts
+- 📊 Detection history visualization
+- 🧪 Test coverage
+- 📝 Documentation improvements
+
+## 📄 License
 
 This project is provided as-is for personal use. Feel free to modify and adapt for your needs.
 
-## Acknowledgments
+**MIT License** - See LICENSE file for details (if you add one)
+
+## 🙏 Acknowledgments
 
 - **WebRTC VAD** - Google's Voice Activity Detection algorithm
 - **SwiftUI** - Apple's modern UI framework
@@ -283,4 +365,14 @@ This project is provided as-is for personal use. Feel free to modify and adapt f
 
 ---
 
-**Enjoy uninterrupted conversations while binge-watching!** 🎬🗣️
+<div align="center">
+
+### Quick Links
+
+[📥 Download](https://github.com/YOUR_USERNAME/intermission/releases) • [🐛 Report Bug](https://github.com/YOUR_USERNAME/intermission/issues) • [💡 Request Feature](https://github.com/YOUR_USERNAME/intermission/issues) • [📖 Documentation](BUILD.md)
+
+**Made with ❤️ for seamless binge-watching**
+
+*Enjoy uninterrupted conversations while watching your favorite shows!* 🎬🗣️
+
+</div>
