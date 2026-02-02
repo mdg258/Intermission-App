@@ -8,8 +8,19 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header with gradient
-            VStack(spacing: 12) {
-                HStack(spacing: 12) {
+            VStack(spacing: 6) {
+                // Custom Logo - Full Width, Zoomed In
+                if let logoImage = NSImage(contentsOfFile: "/Users/creativnativ/Desktop/Netflix-Idea/Intermission/new-logo.png") ??
+                                   NSImage(contentsOfFile: FileManager.default.currentDirectoryPath + "/new-logo.png") {
+                    Image(nsImage: logoImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(maxWidth: .infinity, maxHeight: 90)
+                        .scaleEffect(1.8)
+                        .offset(y: 12)
+                        .clipped()
+                } else {
+                    // Fallback if logo not found
                     ZStack {
                         Circle()
                             .fill(
@@ -31,27 +42,20 @@ struct ContentView: View {
                                 )
                             )
                     }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Intermission")
-                            .font(.system(size: 20, weight: .semibold))
-                        Text("Voice-activated pause")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
-
-                    Spacer()
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 16)
+
+                Text("Voice-activated pause")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 30)
+            .padding(.bottom, 12)
             .background(Color(NSColor.controlBackgroundColor))
 
             Divider()
 
-            ScrollView {
-                VStack(spacing: 16) {
+            VStack(spacing: 12) {
                     // Status Card
                     VStack(spacing: 12) {
                         HStack {
@@ -78,7 +82,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .padding(16)
+                    .padding(12)
                     .background(Color(NSColor.controlBackgroundColor))
                     .cornerRadius(12)
                     .overlay(
@@ -119,7 +123,7 @@ struct ContentView: View {
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.secondary)
                         }
-                        .padding(16)
+                        .padding(12)
                         .background(isHoveringToggle ? Color.primary.opacity(0.04) : Color(NSColor.controlBackgroundColor))
                         .cornerRadius(12)
                         .overlay(
@@ -173,7 +177,7 @@ struct ContentView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
-                    .padding(16)
+                    .padding(12)
                     .background(Color(NSColor.controlBackgroundColor))
                     .cornerRadius(12)
                     .overlay(
@@ -182,7 +186,7 @@ struct ContentView: View {
                     )
 
                     // Info Cards
-                    VStack(spacing: 8) {
+                    VStack(spacing: 6) {
                         InfoRow(icon: "mic.fill", text: "Pauses after ~250ms of speech", color: .blue)
                         InfoRow(icon: "speaker.wave.2.fill", text: "Resumes after ~1s of silence", color: .green)
                     }
@@ -215,7 +219,7 @@ struct ContentView: View {
                             .cornerRadius(8)
                             .buttonStyle(PlainButtonStyle())
                         }
-                        .padding(16)
+                        .padding(12)
                         .background(Color.orange.opacity(0.1))
                         .cornerRadius(12)
                         .overlay(
@@ -224,10 +228,9 @@ struct ContentView: View {
                         )
                     }
                 }
-                .padding(16)
-            }
+                .padding(12)
         }
-        .frame(width: 340, height: 480)
+        .frame(width: 340, height: 500)
         .background(Color(NSColor.windowBackgroundColor))
     }
 
@@ -295,8 +298,8 @@ struct InfoRow: View {
 
             Spacer()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(8)
     }
