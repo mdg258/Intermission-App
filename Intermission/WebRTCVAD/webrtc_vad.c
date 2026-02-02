@@ -133,11 +133,12 @@ int webrtc_vad_process(VadInst* handle,
 
     // Speech must have:
     // 1. Energy above threshold
-    // 2. Energy significantly higher than recent average (1.5x minimum)
-    // 3. Zero crossing rate in speech range
-    if (energy > handle->energy_threshold && energy > avg_energy * 1.5) {
-        // Check zero crossing rate - speech is usually between 0.03 and 0.35
-        if (zcr > 0.03 && zcr < 0.35) {
+    // 2. Energy significantly higher than recent average (1.3x minimum)
+    // 3. Zero crossing rate in speech range (relaxed)
+    if (energy > handle->energy_threshold && energy > avg_energy * 1.3) {
+        // Check zero crossing rate - relaxed range for better detection
+        // Speech can be 0.01-0.5 (very relaxed to catch all speech patterns)
+        if (zcr > 0.01 && zcr < 0.5) {
             frame_has_speech = 1;
         }
     }
@@ -152,12 +153,12 @@ int webrtc_vad_process(VadInst* handle,
         handle->speech_frames = 0;
     }
 
-    // Require 3+ consecutive speech frames to report speech
-    // Require 5+ consecutive silence frames to report silence
+    // Require 2+ consecutive speech frames to report speech (reduced for better responsiveness)
+    // Require 3+ consecutive silence frames to report silence (reduced for better detection)
     int is_speech = 0;
-    if (handle->speech_frames >= 3) {
+    if (handle->speech_frames >= 2) {
         is_speech = 1;
-    } else if (handle->silence_frames < 5 && handle->speech_frames == 0) {
+    } else if (handle->silence_frames < 3 && handle->speech_frames == 0) {
         // Still in speech if we haven't had enough silence frames
         // This prevents brief pauses from being detected as silence
         is_speech = (handle->silence_frames == 0) ? 0 : 0;
